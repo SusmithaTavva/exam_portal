@@ -9,19 +9,18 @@ import {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upload');
-  const [tests, setTests] = useState([
-    { id: 1, name: 'Java Mock Test', questions: 20, attempts: 45, avgScore: 72 },
-    { id: 2, name: 'Aptitude Test', questions: 30, attempts: 120, avgScore: 68 },
-  ]);
+  const [tests, setTests] = useState([]);
   const [students, setStudents] = useState([
     { id: 'STU001', name: 'John Doe', test: 'Java Mock Test', score: 85, date: '2024-01-15' },
     { id: 'STU002', name: 'Jane Smith', test: 'Aptitude Test', score: 92, date: '2024-01-16' },
     { id: 'STU003', name: 'Bob Wilson', test: 'Java Mock Test', score: 78, date: '2024-01-17' },
   ]);
+  const [isLoadingTests, setIsLoadingTests] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (!token) navigate('/admin/login');
+    else fetchTests();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -37,15 +36,16 @@ const AdminDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!testTitle) {
-      alert('Please enter a test title first');
+    if (!testTitle || testTitle.trim() === '') {
+      alert('⚠️ Please enter a Test Title before uploading the file');
+      e.target.value = null; // Reset file input
       return;
     }
 
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('testName', testTitle);
+    formData.append('testName', testTitle.trim());
     // formData.append('testDescription', 'Uploaded via Dashboard'); // Optional
 
     try {
@@ -61,25 +61,74 @@ const AdminDashboard = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        alert(data.message);
+        alert(`✅ ${data.message}\n\nTest ID: ${data.testId}\nQuestions uploaded: ${data.questionsCount}`);
         setTestTitle('');
         e.target.value = null; // Reset file input
         // Optionally refresh tests list here
         fetchTests();
       } else {
-        alert(data.message || 'Upload failed');
+        alert(`❌ ${data.message || 'Upload failed'}`);
+        e.target.value = null; // Reset file input
       }
     } catch (error) {
       console.error('Upload Error:', error);
-      alert('An error occurred during upload');
+      alert('❌ An error occurred during upload. Please check your connection and try again.');
+      e.target.value = null; // Reset file input
     } finally {
       setIsUploading(false);
     }
   };
 
   const fetchTests = async () => {
-    // Placeholder for fetching tests later
-    // console.log('Fetching updated tests list...');
+    try {
+      setIsLoadingTests(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/tests', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setTests(data.tests);
+      } else {
+        console.error('Failed to fetch tests:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching tests:', error);
+    } finally {
+      setIsLoadingTests(false);
+    }
+  };
+
+  const handleDeleteTest = async (testId, testName) => {
+    if (!confirm(`Are you sure you want to delete "${testName}"? This will also delete all ${tests.find(t => t.id === testId)?.question_count || 0} questions.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`/api/tests/${testId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert('✅ Test deleted successfully');
+        fetchTests(); // Refresh the list
+      } else {
+        alert(`❌ ${data.message || 'Failed to delete test'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      alert('❌ An error occurred while deleting the test');
+    }
   };
 
   const exportToExcel = () => {
@@ -209,14 +258,22 @@ const AdminDashboard = () => {
               </h2>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Test Title (New Test)</label>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <span className="text-red-500">* </span>Test Title (Required)
+                </label>
                 <input
                   type="text"
                   value={testTitle}
                   onChange={(e) => setTestTitle(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  placeholder="Enter a title for this test (e.g. Java Basics 101)"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 transition-all"
+                  placeholder="e.g., Programming Basics Test, Aptitude Test 2026, Java MCQ..."
+                  required
                 />
+                {testTitle && (
+                  <p className="mt-1 text-xs text-green-600 flex items-center">
+                    <span className="mr-1">✓</span> Test title is set - you can now upload a file below
+                  </p>
+                )}
               </div>
 
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-slate-900 transition-colors relative">
@@ -229,25 +286,25 @@ const AdminDashboard = () => {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FileSpreadsheet className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-600 mb-2">Drag and drop your Excel/CSV file here</p>
-                <p className="text-sm text-gray-400 mb-4">or</p>
-                <label className={`inline-flex items-center px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg cursor-pointer transition-colors ${!testTitle ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <p className="text-gray-600 mb-2">Click the button below to select your file</p>
+                <p className="text-sm text-gray-400 mb-4">Excel (.xlsx, .xls) or CSV (.csv)</p>
+                <label className={`inline-flex items-center px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg cursor-pointer transition-all duration-200 ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}>
                   <Upload size={18} className="mr-2" />
-                  Browse Files
+                  {isUploading ? 'Uploading...' : 'Browse Files'}
                   <input
                     type="file"
                     accept=".csv,.xlsx,.xls"
                     className="hidden"
                     onChange={handleFileUpload}
-                    disabled={!testTitle || isUploading}
+                    disabled={isUploading}
                   />
                 </label>
                 <p className="mt-4 text-xs text-gray-400">
                   Supported formats: .csv, .xlsx, .xls (Max 5MB)
                 </p>
                 {!testTitle && (
-                  <p className="mt-2 text-sm text-red-500 font-medium">
-                    Please enter a Test Title first
+                  <p className="mt-2 text-sm text-amber-600 font-medium flex items-center justify-center">
+                    <span className="mr-1">⚠️</span> Remember to enter a Test Title above before selecting a file
                   </p>
                 )}
               </div>
@@ -256,38 +313,73 @@ const AdminDashboard = () => {
             {/* Existing Tests */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Existing Tests</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Test Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Questions</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Attempts</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Score</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {tests.map((test) => (
-                      <tr key={test.id}>
-                        <td className="px-4 py-3 font-medium text-gray-900">{test.name}</td>
-                        <td className="px-4 py-3 text-gray-600">{test.questions}</td>
-                        <td className="px-4 py-3 text-gray-600">{test.attempts}</td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                            {test.avgScore}%
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button className="text-red-600 hover:text-red-800">
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
+              
+              {isLoadingTests ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+                  <span className="ml-3 text-gray-600">Loading tests...</span>
+                </div>
+              ) : tests.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <FileSpreadsheet className="mx-auto mb-3 text-gray-300" size={48} />
+                  <p>No tests uploaded yet</p>
+                  <p className="text-sm mt-1">Upload a CSV file above to create your first test</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Test Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Questions</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {tests.map((test) => (
+                        <tr key={test.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-900">{test.title}</td>
+                          <td className="px-4 py-3 text-gray-600">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                              {test.question_count} questions
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 text-sm">
+                            {new Date(test.created_at).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex space-x-2">
+                              <button 
+                                className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+                                title="View Questions"
+                              >
+                                <Eye size={18} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteTest(test.id, test.title)}
+                                className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                                title="Delete Test"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Stats or Additional Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              {/* Future stats or analytics can go here */}
             </div>
           </div>
         )}

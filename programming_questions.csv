@@ -1,0 +1,51 @@
+Question,Option A,Option B,Option C,Option D,Correct Option,Marks
+What is a class in Object-Oriented Programming?,A function,A blueprint for creating objects,A variable,A loop structure,B,2
+Which keyword is used to inherit a class in Python?,extends,inherits,implements,class,A,2
+What does SQL stand for?,Structured Query Language,Simple Question Language,Standard Query List,Sequential Query Language,A,1
+Which data structure is best for implementing a priority queue?,Array,Linked List,Heap,Stack,C,3
+What is the time complexity of binary search?,O(n),O(log n),O(n²),O(1),B,2
+What is polymorphism in OOP?,Using multiple variables,Multiple forms of a single entity,Multiple classes,Multiple functions,B,3
+Which HTTP method is used to update a resource?,GET,POST,PUT,DELETE,C,2
+What is the purpose of a primary key in a database?,To encrypt data,To uniquely identify a record,To sort data,To delete records,B,2
+What does API stand for?,Application Programming Interface,Advanced Program Integration,Automated Process Interface,Application Process Interaction,A,1
+Which sorting algorithm has the best average time complexity?,Bubble Sort,Selection Sort,Merge Sort,Insertion Sort,C,3
+What is the default port for HTTP?,21,80,443,8080,B,1
+What is encapsulation in OOP?,Hiding data and methods within a class,Creating multiple classes,Inheriting properties,Overloading methods,A,2
+Which protocol is used for sending emails?,FTP,SMTP,HTTP,POP3,B,2
+What is a foreign key in databases?,A unique identifier,A reference to a primary key in another table,An encrypted key,A default value,B,2
+What is the purpose of CSS?,To structure web pages,To style web pages,To add functionality,To manage databases,B,1
+Which of the following is a NoSQL database?,MySQL,PostgreSQL,MongoDB,Oracle,C,2
+What does JSON stand for?,JavaScript Object Notation,Java Standard Object Notation,JavaScript Oriented Network,Just Simple Object Names,A,1
+What is the main advantage of using indexes in databases?,Faster data retrieval,More storage space,Better encryption,Easier updates,A,2
+Which design pattern ensures a class has only one instance?,Factory,Singleton,Observer,Strategy,B,3
+What is the purpose of the 'this' keyword in JavaScript?,Refers to global object,Refers to current object,Creates a new object,Deletes an object,B,2
+What is normalization in databases?,Encrypting data,Organizing data to reduce redundancy,Backing up data,Deleting duplicate records,B,3
+Which language is used for styling Android apps?,Java,XML,Kotlin,Swift,B,1
+What is the difference between GET and POST methods?,GET is more secure,POST can send larger amounts of data,GET is faster,There is no difference,B,2
+What is a JOIN in SQL?,Combining rows from two or more tables,Deleting records,Updating records,Creating a new table,A,2
+What is the purpose of version control systems like Git?,To compile code,To track changes in code,To run applications,To test software,B,2
+What does DOM stand for in web development?,Document Object Model,Data Object Management,Digital Operations Module,Document Oriented Markup,A,2
+What is a framework?,A programming language,A platform for developing applications,A database,A testing tool,B,1
+Which HTTP status code indicates success?,404,500,200,301,C,1
+What is recursion in programming?,A loop that never ends,A function that calls itself,A type of variable,An error handling method,B,3
+What is the purpose of middleware in Express.js?,To handle requests and responses,To connect to databases,To create views,To compile code,A,2
+What is a callback function?,A function passed as an argument to another function,A function that returns nothing,An error function,A loop function,A,2
+What is the MVC architecture?,Model-View-Controller,Multiple-Variable-Class,Modern-Version-Control,Method-Value-Calculation,A,3
+What is the purpose of async/await in JavaScript?,To handle asynchronous operations,To create loops,To define variables,To delete objects,A,3
+Which command is used to initialize a Git repository?,git start,git init,git create,git begin,B,1
+What is RESTful API?,An API that follows REST architectural principles,A database query language,A front-end framework,A testing methodology,A,3
+What is a lambda function?,A small anonymous function,A large function,A deprecated function,A system function,A,2
+What is the purpose of Docker?,To containerize applications,To write code,To design databases,To create websites,A,2
+What is Big O notation used for?,To measure algorithm efficiency,To encrypt data,To format code,To debug programs,A,3
+What is the difference between == and === in JavaScript?,No difference,=== checks type and value,== is stricter,=== is deprecated,B,2
+What is a microservice?,A small independent service in an architecture,A small function,A bug,A database query,A,3
+What is the purpose of unit testing?,To test individual components,To test the entire application,To deploy code,To write documentation,A,2
+What is CRUD in database operations?,Create Read Update Delete,Compile Run Update Deploy,Copy Read Upload Delete,Create Record Update Data,A,2
+What is the virtual DOM in React?,A copy of the real DOM for efficient updates,A testing environment,A database,A styling tool,A,3
+What is dependency injection?,Passing dependencies to a class rather than creating them inside,Installing packages,Deleting unused code,Compiling dependencies,A,3
+What is a hash function used for?,To encrypt passwords and ensure data integrity,To sort data,To delete records,To create variables,A,2
+What is the purpose of a load balancer?,To distribute network traffic across servers,To balance code quality,To manage databases,To create backups,A,3
+What is CI/CD?,Continuous Integration and Continuous Deployment,Code Integration and Code Development,Complete Implementation and Complete Deployment,Central Integration and Central Distribution,A,3
+What is the purpose of CORS?,To allow or restrict cross-origin requests,To compress data,To cache responses,To route requests,A,3
+What is serverless computing?,Running code without managing servers,A type of database,A front-end framework,An outdated technology,A,3
+What is GraphQL?,A query language for APIs,A database,A programming language,A testing framework,A,3

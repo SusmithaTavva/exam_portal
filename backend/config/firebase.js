@@ -1,24 +1,17 @@
 const admin = require('firebase-admin');
+const path = require('path');
 require('dotenv').config();
 
+// Path to your service account key JSON file
+const serviceAccountPath = path.join(__dirname, '..', process.env.FIREBASE_SERVICE_ACCOUNT_PATH || 'serviceAccountKey.json');
+
 // Initialize Firebase Admin SDK
-let serviceAccount;
-
-try {
-    // Try to load service account from the path specified in .env
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || '../serviceAccountKey.json';
-    serviceAccount = require(serviceAccountPath);
-
+if (!admin.apps.length) {
     admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+        credential: admin.credential.cert(require(serviceAccountPath)),
+        projectId: process.env.FIREBASE_PROJECT_ID || 'shnoor-exam'
     });
-
-    console.log('✅ Firebase Admin SDK initialized successfully');
-} catch (error) {
-    console.error('❌ Error initializing Firebase Admin SDK:', error.message);
-    console.error('Please ensure your serviceAccountKey.json file is in the correct location');
-    process.exit(1);
 }
 
-// Export Firebase Admin instance
+// Export admin instance for use in other modules
 module.exports = admin;

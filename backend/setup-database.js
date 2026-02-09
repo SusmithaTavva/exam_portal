@@ -46,7 +46,71 @@ const createTables = async () => {
             );
         `);
 
-        // 3. Seed Default Admin
+        // 3. Create Tests Table
+        console.log('Creating tests table...');
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS tests (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        // 4. Create Questions Table
+        console.log('Creating questions table...');
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS questions (
+                id SERIAL PRIMARY KEY,
+                test_id INTEGER NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
+                question_text TEXT NOT NULL,
+                option_a TEXT NOT NULL,
+                option_b TEXT NOT NULL,
+                option_c TEXT,
+                option_d TEXT,
+                correct_option VARCHAR(1) NOT NULL,
+                marks INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        // Create index on test_id for faster lookups
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_questions_test_id ON questions(test_id);`);
+
+        // 5. Create Student Responses Table (for tracking student answers)
+        console.log('Creating student_responses table...');
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS student_responses (
+                id SERIAL PRIMARY KEY,
+                student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+                test_id INTEGER REFERENCES tests(id) ON DELETE CASCADE,
+                question_id INTEGER REFERENCES questions(id) ON DELETE CASCADE,
+                selected_option VARCHAR(1),
+                is_correct BOOLEAN,
+                marks_obtained INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(student_id, question_id)
+            );
+        `);
+
+        // 6. Create Test Attempts Table (to track overall test submissions)
+        console.log('Creating test_attempts table...');
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS test_attempts (
+                id SERIAL PRIMARY KEY,
+                student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+                test_id INTEGER REFERENCES tests(id) ON DELETE CASCADE,
+                total_marks INTEGER DEFAULT 0,
+                obtained_marks INTEGER DEFAULT 0,
+                percentage DECIMAL(5,2),
+                time_taken INTEGER,
+                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(student_id, test_id)
+            );
+        `);
+
+        // 7. Seed Default Admin
         const defaultAdminEmail = 'admin@example.com';
         const defaultAdminPassword = 'admin123';
         const defaultAdminName = 'System Admin';

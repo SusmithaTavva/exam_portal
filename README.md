@@ -2,6 +2,23 @@
 
 A full-stack MCQ Exam Portal built with React, Node.js, Express, PostgreSQL, and Firebase Authentication.
 
+---
+
+## 🚀 For Deployment Team
+
+**Implementing these changes on production?**  
+👉 **See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Complete step-by-step implementation guide with:
+- Detailed file-by-file changes
+- Exact code snippets to add/modify
+- Deployment sequence and testing checklist
+- Troubleshooting common issues
+
+**For technical details:**  
+📋 [CHANGELOG.md](./CHANGELOG.md) - Full feature documentation and API details  
+📝 [MODIFIED_FILES.md](./MODIFIED_FILES.md) - Quick reference of all changed files
+
+---
+
 > **📋 Recent Updates**: See [CHANGELOG.md](./CHANGELOG.md) for detailed list of new features, modified files, and improvements.
 
 ## ✨ Key Highlights

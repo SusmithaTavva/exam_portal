@@ -1,5 +1,39 @@
 # MCQ Exam Portal - Recent Updates
 
+## 🎉 Latest Update - February 10, 2026
+
+### **Institute/University Field Added to Registration**
+
+**Feature**: Added mandatory Institute/University field to student registration system
+
+**Impact**: 
+- All new student registrations now require institute information
+- Existing users need database migration to add institute column
+- Institute name displayed in dashboard header
+
+**Changes Made**:
+
+#### Frontend Updates
+- **Register.jsx**: Added institute input field with validation (min 3 characters)
+- **Login.jsx**: Store institute in localStorage for session persistence
+- **Dashboard.jsx**: Display institute name in header alongside student ID
+
+#### Backend Updates  
+- **routes/auth.js**: Updated registration, login, and profile endpoints to handle institute field
+- **setup-database.js**: Modified students table schema to include `institute VARCHAR(255) NOT NULL`
+
+#### Database Migration
+- **migrations/add-institute-column.sql**: SQL script for existing databases
+- **migrations/run-migration.js**: Node.js migration runner
+- **migrations/README.md**: Migration documentation
+
+**Deployment Notes**:
+- Breaking change: Registration API now requires institute field
+- Existing databases must run migration script before deploying
+- See `WORK_LOG_2026-02-10.md` for detailed deployment instructions
+
+---
+
 ## 🎉 New Features Added
 
 ### 1. **Tests Management API**

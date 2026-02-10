@@ -8,6 +8,7 @@ const Register = () => {
     fullName: '',
     rollNumber: '',
     email: '',
+    institute: '',
     password: '',
     confirmPassword: ''
   });
@@ -34,6 +35,12 @@ const Register = () => {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Enter a valid institutional email';
+    }
+
+    if (!formData.institute.trim()) {
+      newErrors.institute = 'Institute/University is required';
+    } else if (formData.institute.length < 3) {
+      newErrors.institute = 'Institute name must be at least 3 characters';
     }
 
     if (!formData.password) {
@@ -89,7 +96,8 @@ const Register = () => {
         body: JSON.stringify({
           full_name: formData.fullName.trim(),
           email: formData.email.trim(),
-          roll_number: formData.rollNumber.trim()
+          roll_number: formData.rollNumber.trim(),
+          institute: formData.institute.trim().toLowerCase()
         }),
       });
 
@@ -197,6 +205,32 @@ const Register = () => {
               </span>
             )}
             <span className="text-xs text-slate-400 italic mt-1">This will be your permanent examination ID</span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-[13px] font-semibold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+              Institute/University <span className="text-red-600 font-bold">*</span>
+            </label>
+            <input
+              type="text"
+              name="institute"
+              className={`w-full h-[52px] px-[18px] border-2 rounded-md text-base text-slate-900 bg-white transition-all duration-200 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-400 placeholder:text-[15px] ${errors.institute ? 'border-red-600 bg-red-50 focus:ring-red-600/10' : 'border-slate-200'
+                }`}
+              placeholder="e.g., MIT, Stanford University"
+              value={formData.institute}
+              onChange={handleChange}
+              disabled={isLoading}
+              autoComplete="organization"
+            />
+            {errors.institute && (
+              <span className="text-red-600 text-[13px] font-medium flex items-center gap-1.5 mt-1">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zm0 12a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm0-9a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0V4a1 1 0 0 0-1-1z" />
+                </svg>
+                {errors.institute}
+              </span>
+            )}
+            <span className="text-xs text-slate-400 italic mt-1">Enter your institute or university name</span>
           </div>
 
           <div className="flex flex-col gap-2">

@@ -10,16 +10,19 @@ const verifyToken = require('../middleware/verifyToken');
  */
 router.post('/register', verifyToken, async (req, res) => {
     try {
-        const { full_name, email, roll_number } = req.body;
+        const { full_name, email, roll_number, institute } = req.body;
         const firebase_uid = req.firebaseUid; // From verifyToken middleware
 
         // Validate required fields
-        if (!full_name || !email || !roll_number) {
+        if (!full_name || !email || !roll_number || !institute) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required fields: full_name, email, roll_number',
+                message: 'Missing required fields: full_name, email, roll_number, institute',
             });
         }
+
+        // Normalize institute name to lowercase for consistency
+        const normalizedInstitute = institute.trim().toLowerCase();
 
         // Check if user already exists
         const existingUser = await query(
@@ -54,10 +57,10 @@ router.post('/register', verifyToken, async (req, res) => {
 
         // Insert new student into database
         const result = await query(
-            `INSERT INTO students (firebase_uid, full_name, email, roll_number) 
-       VALUES ($1, $2, $3, $4) 
-       RETURNING id, firebase_uid, full_name, email, roll_number, created_at`,
-            [firebase_uid, full_name, email, roll_number]
+            `INSERT INTO students (firebase_uid, full_name, email, roll_number, institute) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, firebase_uid, full_name, email, roll_number, institute, created_at`,
+            [firebase_uid, full_name, email, roll_number, normalizedInstitute]
         );
 
         const newUser = result.rows[0];
@@ -71,6 +74,7 @@ router.post('/register', verifyToken, async (req, res) => {
                 full_name: newUser.full_name,
                 email: newUser.email,
                 roll_number: newUser.roll_number,
+                institute: newUser.institute,
                 created_at: newUser.created_at,
             },
         });
@@ -104,7 +108,7 @@ router.post('/login', verifyToken, async (req, res) => {
 
         // Fetch student profile from database
         const result = await query(
-            'SELECT id, firebase_uid, full_name, email, roll_number, created_at FROM students WHERE firebase_uid = $1',
+            'SELECT id, firebase_uid, full_name, email, roll_number, institute, created_at FROM students WHERE firebase_uid = $1',
             [firebase_uid]
         );
 
@@ -126,6 +130,7 @@ router.post('/login', verifyToken, async (req, res) => {
                 full_name: student.full_name,
                 email: student.email,
                 roll_number: student.roll_number,
+                institute: student.institute,
                 created_at: student.created_at,
             },
         });
@@ -149,7 +154,7 @@ router.get('/profile', verifyToken, async (req, res) => {
         const firebase_uid = req.firebaseUid;
 
         const result = await query(
-            'SELECT id, firebase_uid, full_name, email, roll_number, created_at FROM students WHERE firebase_uid = $1',
+            'SELECT id, firebase_uid, full_name, email, roll_number, institute, created_at FROM students WHERE firebase_uid = $1',
             [firebase_uid]
         );
 

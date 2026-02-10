@@ -22,6 +22,7 @@ A full-stack MCQ Exam Portal built with React, Node.js, Express, PostgreSQL, and
 > **📋 Recent Updates**: See [CHANGELOG.md](./CHANGELOG.md) for detailed list of new features, modified files, and improvements.
 
 ## ✨ Key Highlights
+- **Institute Tracking**: Student registrations now include Institute/University affiliation
 - **Bulk & Single Question Upload**: Upload questions via CSV/Excel or add them one by one through API
 - **Real-Time Test Management**: View, manage, and delete tests with live database updates
 - **Dual Authentication**: Firebase for students, JWT for admins
@@ -139,7 +140,12 @@ npm run dev
 ### Student Login
 - **URL**: `http://localhost:5173/login`
 - **Method**: Sign in via Google (Firebase Auth).
-- **Note**: New students must register their Roll Number after Google Sign-in.
+- **Note**: New students must register with:
+  - Full Name
+  - Roll Number  
+  - Email
+  - Institute/University (Required)
+  - Password
 
 ## Bulk Upload MCQ Questions
 
@@ -185,7 +191,7 @@ What is 2 + 2?,3,4,5,6,B,1
 ## 🔌 API Endpoints
 
 ### Authentication
-- `POST /api/register` - Student registration (Firebase)
+- `POST /api/register` - Student registration (requires: full_name, email, roll_number, institute, password)
 - `POST /api/login` - Student login
 - `POST /api/admin/login` - Admin login (JWT)
 

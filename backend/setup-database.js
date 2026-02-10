@@ -24,6 +24,7 @@ const createTables = async () => {
                 full_name VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
                 roll_number VARCHAR(100) UNIQUE NOT NULL,
+                institute VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
@@ -110,7 +111,24 @@ const createTables = async () => {
             );
         `);
 
-        // 7. Seed Default Admin
+        // 7. Create Test Assignments Table (for assigning tests to students)
+        console.log('Creating test_assignments table...');
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS test_assignments (
+                id SERIAL PRIMARY KEY,
+                test_id INTEGER REFERENCES tests(id) ON DELETE CASCADE,
+                student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT true,
+                UNIQUE(test_id, student_id)
+            );
+        `);
+
+        // Create indices for test_assignments
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_test_assignments_student ON test_assignments(student_id);`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_test_assignments_test ON test_assignments(test_id);`);
+
+        // 8. Seed Default Admin
         const defaultAdminEmail = 'admin@example.com';
         const defaultAdminPassword = 'admin123';
         const defaultAdminName = 'System Admin';

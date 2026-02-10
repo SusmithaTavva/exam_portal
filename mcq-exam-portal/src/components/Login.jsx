@@ -106,6 +106,7 @@ const Login = () => {
       localStorage.setItem('studentName', user.full_name || '');
       localStorage.setItem('rollNumber', user.roll_number || '');
       localStorage.setItem('email', user.email || '');
+      localStorage.setItem('institute', user.institute || '');
 
       // Navigate to dashboard
       navigate('/dashboard', {

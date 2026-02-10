@@ -6,6 +6,17 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [studentName, setStudentName] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [institute, setInstitute] = useState('');
+
+  // Helper to capitalize institute name for display
+  const capitalizeInstitute = (name) => {
+    if (!name) return '';
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   const [availableTests, setAvailableTests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +32,7 @@ const Dashboard = () => {
 
       setStudentName(localStorage.getItem('studentName') || 'Student');
       setStudentId(localStorage.getItem('studentId') || '');
+      setInstitute(localStorage.getItem('institute') || '');
 
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/student/tests`, {
@@ -79,7 +91,7 @@ const Dashboard = () => {
             <div className="flex items-center space-x-6">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">Welcome, {studentName}</p>
-                <p className="text-xs text-gray-500">ID: {studentId}</p>
+                <p className="text-xs text-gray-500">{capitalizeInstitute(institute)} • ID: {studentId}</p>
               </div>
               <button
                 onClick={handleLogout}

@@ -5,32 +5,53 @@ const verifyToken = require('../middleware/verifyToken');
 
 /**
  * GET /api/student/tests
- * Fetch all available tests
+ * Fetch tests assigned to the logged-in student
  */
 router.get('/tests', verifyToken, async (req, res) => {
     try {
-        // Fetch all tests with question count
+        const firebase_uid = req.firebaseUid;
+
+        // First, get the student ID from firebase_uid
+        const studentResult = await pool.query(
+            'SELECT id FROM students WHERE firebase_uid = $1',
+            [firebase_uid]
+        );
+
+        if (studentResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student profile not found'
+            });
+        }
+
+        const studentId = studentResult.rows[0].id;
+
+        // Fetch tests assigned to this student
         const result = await pool.query(`
             SELECT 
                 t.id, 
                 t.title, 
                 t.description,
                 t.created_at,
-                (SELECT COUNT(*) FROM questions q WHERE q.test_id = t.id) as question_count
+                (SELECT COUNT(*) FROM questions q WHERE q.test_id = t.id) as question_count,
+                ta.assigned_at
             FROM tests t
-            ORDER BY t.created_at DESC
-        `);
+            INNER JOIN test_assignments ta ON t.id = ta.test_id
+            WHERE ta.student_id = $1 AND ta.is_active = true
+            ORDER BY ta.assigned_at DESC
+        `, [studentId]);
 
-        // Transform data to match frontend expectations (adding placeholders for missing fields like duration/subject for now)
+        // Transform data to match frontend expectations
         const tests = result.rows.map(test => ({
             id: test.id,
             title: test.title,
             description: test.description,
             questions: parseInt(test.question_count),
-            duration: '60 Minutes', // Placeholder: logic to store/fetch duration needs to be added to DB if dynamic
+            duration: '60 Minutes', // Placeholder
             subject: 'General', // Placeholder
             difficulty: 'Medium', // Placeholder
-            color: 'bg-blue-50 border-blue-200' // Default styling
+            color: 'bg-blue-50 border-blue-200', // Default styling
+            assignedAt: test.assigned_at
         }));
 
         res.json({
@@ -48,13 +69,39 @@ router.get('/tests', verifyToken, async (req, res) => {
 
 /**
  * GET /api/student/test/:testId
- * Fetch a specific test and its questions
+ * Fetch a specific test and its questions (only if assigned to the student)
  */
 router.get('/test/:testId', verifyToken, async (req, res) => {
     const { testId } = req.params;
+    const firebase_uid = req.firebaseUid;
 
     try {
-        // 1. Fetch Test Details
+        // Get student ID
+        const studentResult = await pool.query(
+            'SELECT id FROM students WHERE firebase_uid = $1',
+            [firebase_uid]
+        );
+
+        if (studentResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Student profile not found' });
+        }
+
+        const studentId = studentResult.rows[0].id;
+
+        // Check if test is assigned to this student
+        const assignmentCheck = await pool.query(
+            'SELECT * FROM test_assignments WHERE test_id = $1 AND student_id = $2 AND is_active = true',
+            [testId, studentId]
+        );
+
+        if (assignmentCheck.rows.length === 0) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'This test is not assigned to you' 
+            });
+        }
+
+        // Fetch Test Details
         const testResult = await pool.query('SELECT * FROM tests WHERE id = $1', [testId]);
 
         if (testResult.rows.length === 0) {
@@ -63,8 +110,7 @@ router.get('/test/:testId', verifyToken, async (req, res) => {
 
         const test = testResult.rows[0];
 
-        // 2. Fetch Questions (excluding correct_option to prevent cheating)
-        // We select option_a, option_b, etc., but do NOT select correct_option
+        // Fetch Questions (excluding correct_option to prevent cheating)
         const questionsResult = await pool.query(`
             SELECT 
                 id, 
@@ -83,7 +129,7 @@ router.get('/test/:testId', verifyToken, async (req, res) => {
         const questions = questionsResult.rows.map(q => ({
             id: q.id,
             question: q.question,
-            options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(opt => opt !== null && opt !== ''), // Filter out empty options if any
+            options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(opt => opt !== null && opt !== ''), // Filter out empty options
             marks: q.marks
         }));
 

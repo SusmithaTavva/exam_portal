@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Upload, FileSpreadsheet, Users, LogOut,
-  Download, Trash2, Eye, FileText
+  Download, Trash2, Eye, FileText, UserCheck, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -16,12 +16,26 @@ const AdminDashboard = () => {
     { id: 'STU003', name: 'Bob Wilson', test: 'Java Mock Test', score: 78, date: '2024-01-17' },
   ]);
   const [isLoadingTests, setIsLoadingTests] = useState(false);
+  
+  // Test Assignment States
+  const [institutes, setInstitutes] = useState([]);
+  const [expandedInstitutes, setExpandedInstitutes] = useState({});
+  const [instituteStudents, setInstituteStudents] = useState({});
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectedTest, setSelectedTest] = useState('');
+  const [isLoadingInstitutes, setIsLoadingInstitutes] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (!token) navigate('/admin/login');
-    else fetchTests();
-  }, [navigate]);
+    else {
+      fetchTests();
+      if (activeTab === 'assign') {
+        fetchInstitutes();
+      }
+    }
+  }, [navigate, activeTab]);
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -131,6 +145,155 @@ const AdminDashboard = () => {
     }
   };
 
+  // Fetch Institutes
+  const fetchInstitutes = async () => {
+    try {
+      setIsLoadingInstitutes(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/tests/institutes', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setInstitutes(data.institutes);
+      } else {
+        console.error('Failed to fetch institutes:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching institutes:', error);
+    } finally {
+      setIsLoadingInstitutes(false);
+    }
+  };
+
+  // Toggle Institute Expansion
+  const toggleInstitute = async (instituteName) => {
+    const isExpanded = expandedInstitutes[instituteName];
+    
+    setExpandedInstitutes(prev => ({
+      ...prev,
+      [instituteName]: !isExpanded
+    }));
+
+    // Fetch students if not already loaded
+    if (!isExpanded && !instituteStudents[instituteName]) {
+      try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`/api/tests/institutes/${encodeURIComponent(instituteName)}/students`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          setInstituteStudents(prev => ({
+            ...prev,
+            [instituteName]: data.students
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching students:', error);
+      }
+    }
+  };
+
+  // Toggle All Students from an Institute
+  const toggleAllStudents = (instituteName, students) => {
+    const studentIds = students.map(s => s.id);
+    const allSelected = studentIds.every(id => selectedStudents.includes(id));
+
+    if (allSelected) {
+      // Deselect all from this institute
+      setSelectedStudents(prev => prev.filter(id => !studentIds.includes(id)));
+    } else {
+      // Select all from this institute
+      setSelectedStudents(prev => {
+        const newSelection = [...prev];
+        studentIds.forEach(id => {
+          if (!newSelection.includes(id)) {
+            newSelection.push(id);
+          }
+        });
+        return newSelection;
+      });
+    }
+  };
+
+  // Toggle Individual Student
+  const toggleStudent = (studentId) => {
+    setSelectedStudents(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
+  };
+
+  // Assign Test to Selected Students
+  const handleAssignTest = async () => {
+    if (!selectedTest) {
+      alert('⚠️ Please select a test to assign');
+      return;
+    }
+
+    if (selectedStudents.length === 0) {
+      alert('⚠️ Please select at least one student');
+      return;
+    }
+
+    if (!confirm(`Assign test to ${selectedStudents.length} student(s)?`)) {
+      return;
+    }
+
+    try {
+      setIsAssigning(true);
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/tests/assign', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          test_id: parseInt(selectedTest),
+          student_ids: selectedStudents
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert(`✅ ${data.message}`);
+        setSelectedStudents([]);
+        setSelectedTest('');
+      } else {
+        alert(`❌ ${data.message || 'Failed to assign test'}`);
+      }
+    } catch (error) {
+      console.error('Error assigning test:', error);
+      alert('❌ An error occurred while assigning the test');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  // Helper function to capitalize institute name for display
+  const capitalizeInstitute = (instituteName) => {
+    if (!instituteName) return '';
+    return instituteName
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const exportToExcel = () => {
     // Mock export
     const csvContent = "data:text/csv;charset=utf-8,"
@@ -182,6 +345,7 @@ const AdminDashboard = () => {
           <div className="flex space-x-8">
             {[
               { id: 'upload', label: 'Upload Questions', icon: Upload },
+              { id: 'assign', label: 'Assign Tests', icon: UserCheck },
               { id: 'results', label: 'Marks Overview', icon: FileSpreadsheet },
             ].map((tab) => (
               <button
@@ -380,6 +544,159 @@ const AdminDashboard = () => {
             {/* Stats or Additional Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               {/* Future stats or analytics can go here */}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'assign' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+                <UserCheck className="mr-2" size={20} />
+                Assign Tests to Students
+              </h2>
+
+              {/* Test Selection */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Select Test to Assign
+                </label>
+                <select
+                  value={selectedTest}
+                  onChange={(e) => setSelectedTest(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  <option value="">-- Choose a test --</option>
+                  {tests.map((test) => (
+                    <option key={test.id} value={test.id}>
+                      {test.title} ({test.question_count} questions)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Selected Students Counter */}
+              {selectedStudents.length > 0 && (
+                <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm font-semibold text-green-900">
+                    {selectedStudents.length} student(s) selected
+                  </p>
+                </div>
+              )}
+
+              {/* Institutes and Students */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 mb-3">Select Students by Institute</h3>
+                
+                {isLoadingInstitutes ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+                    <span className="ml-3 text-gray-600">Loading institutes...</span>
+                  </div>
+                ) : institutes.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="mx-auto mb-3 text-gray-300" size={48} />
+                    <p>No students registered yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {institutes.map((institute) => {
+                      const isExpanded = expandedInstitutes[institute.institute];
+                      const students = instituteStudents[institute.institute] || [];
+                      const allSelected = students.length > 0 && students.every(s => selectedStudents.includes(s.id));
+                      const someSelected = students.some(s => selectedStudents.includes(s.id));
+
+                      return (
+                        <div key={institute.institute} className="border border-gray-200 rounded-lg overflow-hidden">
+                          {/* Institute Header */}
+                          <div className="bg-gray-50 p-4 flex items-center justify-between">
+                            <div className="flex items-center space-x-3 flex-1">
+                              <button
+                                onClick={() => toggleInstitute(institute.institute)}
+                                className="text-gray-600 hover:text-gray-900 transition-colors"
+                              >
+                                {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                              </button>
+                              
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900">{capitalizeInstitute(institute.institute)}</h4>
+                                <p className="text-sm text-gray-500">{institute.student_count} students</p>
+                              </div>
+
+                              {students.length > 0 && (
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    ref={(el) => {
+                                      if (el) el.indeterminate = someSelected && !allSelected;
+                                    }}
+                                    onChange={() => toggleAllStudents(institute.institute, students)}
+                                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm font-medium text-gray-700">
+                                    Select All
+                                  </span>
+                                </label>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Students List */}
+                          {isExpanded && (
+                            <div className="p-4 bg-white">
+                              {students.length === 0 ? (
+                                <p className="text-sm text-gray-500 italic">Loading students...</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {students.map((student) => (
+                                    <label
+                                      key={student.id}
+                                      className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedStudents.includes(student.id)}
+                                        onChange={() => toggleStudent(student.id)}
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                      />
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900">{student.full_name}</p>
+                                        <p className="text-sm text-gray-500">
+                                          {student.roll_number} • {student.email}
+                                        </p>
+                                      </div>
+                                    </label>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Assign Button */}
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={handleAssignTest}
+                  disabled={!selectedTest || selectedStudents.length === 0 || isAssigning}
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all flex items-center space-x-2 ${
+                    selectedTest && selectedStudents.length > 0 && !isAssigning
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {isAssigning && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <UserCheck size={18} />
+                  <span>{isAssigning ? 'Assigning...' : `Assign Test to ${selectedStudents.length} Student(s)`}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

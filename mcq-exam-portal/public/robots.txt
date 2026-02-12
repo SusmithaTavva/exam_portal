@@ -1,0 +1,16 @@
+User-agent: *
+
+Allow: /
+Allow: /login
+Allow: /register
+
+Disallow: /dashboard
+Disallow: /instructions
+Disallow: /test
+Disallow: /result
+Disallow: /feedback
+
+Disallow: /admin/
+
+
+Sitemap: https://assessments.shnoor.com/sitemap.xml

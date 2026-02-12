@@ -314,23 +314,23 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20">
       {/* Header */}
-      <header className="bg-slate-900 text-white shadow-lg">
+      <header className="bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 text-white shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
-                <span className="font-bold text-xl">A</span>
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg border border-white/20">
+                <span className="font-bold text-xl">📚</span>
               </div>
               <div>
                 <h1 className="font-bold text-lg">Admin Dashboard</h1>
-                <p className="text-xs text-gray-400">MCQ Management System</p>
+                <p className="text-xs text-blue-100">MCQ Management System</p>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 border border-white/20 rounded-lg transition-all duration-200 hover:shadow-lg"
             >
               <LogOut size={18} />
               <span>Logout</span>
@@ -340,7 +340,7 @@ const AdminDashboard = () => {
       </header>
 
       {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-indigo-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
             {[
@@ -351,9 +351,9 @@ const AdminDashboard = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                  ? 'border-slate-900 text-slate-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm transition-all duration-200 ${activeTab === tab.id
+                  ? 'border-indigo-600 text-indigo-700'
+                  : 'border-transparent text-slate-600 hover:text-indigo-600 hover:border-indigo-200'
                   }`}
               >
                 <tab.icon size={18} />

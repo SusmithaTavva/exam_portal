@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- STUDENT ROUTES -->
+
+  <url>
+    <loc>https://assessments.shnoor.com/dashboard</loc>
+  </url>
+
+  <url>
+    <loc>https://assessments.shnoor.com/instructions</loc>
+  </url>
+
+  <url>
+    <loc>https://assessments.shnoor.com/test</loc>
+  </url>
+
+  <url>
+    <loc>https://assessments.shnoor.com/result</loc>
+  </url>
+
+  <url>
+    <loc>https://assessments.shnoor.com/feedback</loc>
+  </url>
+
+  <!--ADMIN ROUTES -->
+
+  <url>
+    <loc>https://assessments.shnoor.com/admin/dashboard</loc>
+  </url>
+
+  <url>
+    <loc>https://assessments.shnoor.com/admin/live-proctoring</loc>
+  </url>
+
+</urlset>

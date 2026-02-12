@@ -69,18 +69,20 @@ router.delete('/:id', verifyAdmin, async (req, res) => {
 
 /**
  * GET /api/tests/institutes
- * Fetch all institutes with their student counts
+ * Fetch all institutes with their student counts (only active institutes)
  */
 router.get('/institutes', verifyAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
-                LOWER(institute) as institute,
+                LOWER(s.institute) as institute,
                 COUNT(*) as student_count,
-                STRING_AGG(full_name, ', ') as student_names
-            FROM students
-            GROUP BY LOWER(institute)
-            ORDER BY LOWER(institute) ASC
+                STRING_AGG(s.full_name, ', ') as student_names
+            FROM students s
+            INNER JOIN institutes i ON LOWER(s.institute) = i.name
+            WHERE i.is_active = true
+            GROUP BY LOWER(s.institute)
+            ORDER BY LOWER(s.institute) ASC
         `);
 
         res.json({

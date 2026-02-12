@@ -14,6 +14,7 @@ const adminAuthRoutes = require('./routes/adminAuth');
 const uploadRoutes = require('./routes/upload');
 const studentRoutes = require('./routes/student');
 const testsRoutes = require('./routes/tests');
+const institutesRoutes = require('./routes/institutes');
 
 // Initialize Express app
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/admin', adminAuthRoutes);
 app.use('/api/admin/upload', uploadRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/tests', testsRoutes);
+app.use('/api/institutes', institutesRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

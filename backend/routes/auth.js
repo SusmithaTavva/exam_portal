@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { query } = require('../config/db');
+const { query, pool } = require('../config/db');
 const verifyToken = require('../middleware/verifyToken');
 
 /**
@@ -9,6 +9,7 @@ const verifyToken = require('../middleware/verifyToken');
  * Frontend should register user in Firebase first, then call this endpoint
  */
 router.post('/register', verifyToken, async (req, res) => {
+    const client = await pool.connect();
     try {
         const { full_name, email, roll_number, institute } = req.body;
         const firebase_uid = req.firebaseUid; // From verifyToken middleware
@@ -23,14 +24,18 @@ router.post('/register', verifyToken, async (req, res) => {
 
         // Normalize institute name to lowercase for consistency
         const normalizedInstitute = institute.trim().toLowerCase();
+        const displayInstitute = institute.trim();
+
+        await client.query('BEGIN');
 
         // Check if user already exists
-        const existingUser = await query(
+        const existingUser = await client.query(
             'SELECT * FROM students WHERE firebase_uid = $1 OR email = $2 OR roll_number = $3',
             [firebase_uid, email, roll_number]
         );
 
         if (existingUser.rows.length > 0) {
+            await client.query('ROLLBACK');
             const existing = existingUser.rows[0];
 
             if (existing.firebase_uid === firebase_uid) {
@@ -55,15 +60,113 @@ router.post('/register', verifyToken, async (req, res) => {
             }
         }
 
+        // Create institutes table if it doesn't exist
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS institutes (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                display_name VARCHAR(255) NOT NULL,
+                created_by VARCHAR(255) DEFAULT 'admin',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT true
+            )
+        `);
+
+        // Check if institute exists, if not create it
+        const instituteCheck = await client.query(
+            'SELECT name, display_name FROM institutes WHERE name = $1 AND is_active = true',
+            [normalizedInstitute]
+        );
+
+        if (instituteCheck.rows.length === 0) {
+            // Institute doesn't exist, create it
+            await client.query(
+                `INSERT INTO institutes (name, display_name, created_by) 
+                 VALUES ($1, $2, 'student_registration')
+                 ON CONFLICT (name) DO NOTHING`,
+                [normalizedInstitute, displayInstitute]
+            );
+        }
+
         // Insert new student into database
-        const result = await query(
+        const result = await client.query(
             `INSERT INTO students (firebase_uid, full_name, email, roll_number, institute) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING id, firebase_uid, full_name, email, roll_number, institute, created_at`,
+             VALUES ($1, $2, $3, $4, $5) 
+             RETURNING id, firebase_uid, full_name, email, roll_number, institute, created_at`,
             [firebase_uid, full_name, email, roll_number, normalizedInstitute]
         );
 
         const newUser = result.rows[0];
+
+        // Check if there are any test assignments for this institute
+        // and auto-assign them to the new student
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS test_assignments (
+                id SERIAL PRIMARY KEY,
+                test_id INTEGER REFERENCES tests(id) ON DELETE CASCADE,
+                student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT true,
+                UNIQUE(test_id, student_id)
+            )
+        `);
+
+        // Create institute_test_assignments table if it doesn't exist
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS institute_test_assignments (
+                id SERIAL PRIMARY KEY,
+                institute_id INTEGER REFERENCES institutes(id) ON DELETE CASCADE,
+                test_id INTEGER REFERENCES tests(id) ON DELETE CASCADE,
+                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT true,
+                UNIQUE(institute_id, test_id)
+            )
+        `);
+
+        // Check if the institute exists in the institutes table
+        const instituteRecord = await client.query(
+            'SELECT id FROM institutes WHERE name = $1 AND is_active = true',
+            [normalizedInstitute]
+        );
+
+        let testsToAssign = [];
+
+        // Method 1: Check for institute-level test assignments (new approach)
+        if (instituteRecord.rows.length > 0) {
+            const instituteId = instituteRecord.rows[0].id;
+            const instituteTests = await client.query(`
+                SELECT test_id
+                FROM institute_test_assignments
+                WHERE institute_id = $1 AND is_active = true
+            `, [instituteId]);
+
+            testsToAssign = instituteTests.rows.map(row => row.test_id);
+        }
+
+        // Method 2: Fallback - check if any student from the same institute has assignments (old approach)
+        if (testsToAssign.length === 0) {
+            const instituteTests = await client.query(`
+                SELECT DISTINCT ta.test_id
+                FROM test_assignments ta
+                JOIN students s ON ta.student_id = s.id
+                WHERE LOWER(s.institute) = $1 AND ta.is_active = true
+            `, [normalizedInstitute]);
+
+            testsToAssign = instituteTests.rows.map(row => row.test_id);
+        }
+
+        // Auto-assign those tests to the new student
+        if (testsToAssign.length > 0) {
+            for (const testId of testsToAssign) {
+                await client.query(`
+                    INSERT INTO test_assignments (test_id, student_id, is_active)
+                    VALUES ($1, $2, true)
+                    ON CONFLICT (test_id, student_id) DO NOTHING
+                `, [testId, newUser.id]);
+            }
+        }
+
+        await client.query('COMMIT');
 
         return res.status(201).json({
             success: true,
@@ -79,6 +182,7 @@ router.post('/register', verifyToken, async (req, res) => {
             },
         });
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error('Registration error:', error);
 
         // Handle database-specific errors
@@ -94,6 +198,8 @@ router.post('/register', verifyToken, async (req, res) => {
             message: 'Internal server error during registration',
             error: error.message,
         });
+    } finally {
+        client.release();
     }
 });
 
